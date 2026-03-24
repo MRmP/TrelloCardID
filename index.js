@@ -1,6 +1,5 @@
 /* Trello Card ID Power-Up
  * Adds a unique sequential ID to each card with configurable prefix/postfix.
- * IDs are stored in card shared plugin data and displayed as badges.
  */
 
 var ICON_URL = 'https://mrmP.github.io/TrelloCardID/icon.svg';
@@ -33,7 +32,7 @@ TrelloPowerUp.initialize({
     });
   },
 
-  // Card back section — shows settings panel inside the card detail view
+  // Card back section — shows the card's ID and a link to settings
   'card-back-section': function(t) {
     return {
       title: 'Card ID',
@@ -41,12 +40,12 @@ TrelloPowerUp.initialize({
       content: {
         type: 'iframe',
         url: t.signUrl('card-section.html'),
-        height: 120
+        height: 110
       }
     };
   },
 
-  // Board buttons — Assign All IDs
+  // Board buttons — Assign All IDs + Settings
   'board-buttons': function(t) {
     return [
       {
@@ -57,6 +56,17 @@ TrelloPowerUp.initialize({
             title: 'Assign IDs to All Cards',
             url: 'assign-all.html',
             height: 160
+          });
+        }
+      },
+      {
+        text: 'Card ID Settings',
+        icon: { dark: ICON_URL, light: ICON_URL },
+        callback: function(t) {
+          return t.popup({
+            title: 'Card ID Settings',
+            url: 'settings.html',
+            height: 200
           });
         }
       }

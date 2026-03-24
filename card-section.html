@@ -7,118 +7,86 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      padding: 8px 12px;
+      padding: 12px 16px;
       background: transparent;
       color: #172b4d;
     }
-    .row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    label {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: #5e6c84;
-      width: 52px;
-      flex-shrink: 0;
-    }
-    input {
-      flex: 1;
-      padding: 5px 8px;
-      border: 2px solid #dfe1e6;
-      border-radius: 4px;
-      font-size: 13px;
-      color: #172b4d;
-      outline: none;
-      background: #fff;
-    }
-    input:focus { border-color: #0079bf; }
-    .preview-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
+    .id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .badge {
       display: inline-block;
       background: #0079bf;
       color: white;
-      border-radius: 3px;
-      padding: 2px 10px;
-      font-weight: 600;
-      font-size: 12px;
-    }
-    .preview-label {
-      font-size: 11px;
-      color: #5e6c84;
-    }
-    button {
-      padding: 5px 12px;
-      background: #0079bf;
-      color: white;
-      border: none;
       border-radius: 4px;
+      padding: 4px 10px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .no-id { font-size: 13px; color: #5e6c84; }
+    .divider { border: none; border-top: 1px solid #dfe1e6; margin: 10px 0; }
+    .settings-row { display: flex; gap: 8px; }
+    button {
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid #dfe1e6;
+      border-radius: 4px;
+      background: #f4f5f7;
+      color: #172b4d;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background: #026aa7; }
-    .saved { color: #61bd4f; font-size: 12px; font-weight: 600; display: none; }
+    button:hover { background: #e4e6ea; }
+    button.primary { background: #0079bf; color: white; border-color: #0079bf; }
+    button.primary:hover { background: #026aa7; }
   </style>
 </head>
 <body>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-
-  <div class="row">
-    <label>Prefix</label>
-    <input type="text" id="prefix" placeholder="e.g. PROJ-" maxlength="20" />
+  <div class="id-row">
+    <span id="badge" class="badge" style="display:none"></span>
+    <span id="no-id" class="no-id" style="display:none">No ID assigned yet</span>
   </div>
-  <div class="row">
-    <label>Postfix</label>
-    <input type="text" id="postfix" placeholder="e.g. -2024" maxlength="20" />
+  <hr class="divider" />
+  <div class="settings-row">
+    <button id="assign-btn" style="display:none" onclick="assignId()">Assign ID</button>
+    <button class="primary" onclick="openSettings()">&#9881; Prefix / Postfix Settings</button>
   </div>
-  <div class="preview-row">
-    <span class="preview-label">Preview:</span>
-    <span class="badge" id="preview">0001</span>
-    <button onclick="save()">Save</button>
-    <span class="saved" id="saved">✓ Saved!</span>
-  </div>
-
   <script>
     var t = TrelloPowerUp.iframe();
-
     Promise.all([
+      t.get('card', 'shared', 'cardId'),
       t.get('board', 'shared', 'prefix'),
       t.get('board', 'shared', 'postfix')
     ]).then(function(vals) {
-      document.getElementById('prefix').value = vals[0] || '';
-      document.getElementById('postfix').value = vals[1] || '';
-      updatePreview();
+      var cardId = vals[0], prefix = vals[1] || '', postfix = vals[2] || '';
+      if (cardId) {
+        var badge = document.getElementById('badge');
+        badge.textContent = prefix + cardId + postfix;
+        badge.style.display = 'inline-block';
+      } else {
+        document.getElementById('no-id').style.display = 'inline';
+        document.getElementById('assign-btn').style.display = 'block';
+      }
+      t.sizeTo(document.body);
     });
-
-    function updatePreview() {
-      var p = document.getElementById('prefix').value;
-      var s = document.getElementById('postfix').value;
-      document.getElementById('preview').textContent = (p || '') + '0001' + (s || '');
+    function openSettings() {
+      t.popup({ title: 'Card ID Settings', url: 'settings.html', height: 200 });
     }
-
-    document.getElementById('prefix').addEventListener('input', updatePreview);
-    document.getElementById('postfix').addEventListener('input', updatePreview);
-
-    function save() {
-      var prefix = document.getElementById('prefix').value;
-      var postfix = document.getElementById('postfix').value;
-      Promise.all([
-        t.set('board', 'shared', 'prefix', prefix),
-        t.set('board', 'shared', 'postfix', postfix)
-      ]).then(function() {
-        var saved = document.getElementById('saved');
-        saved.style.display = 'inline';
-        setTimeout(function() { saved.style.display = 'none'; }, 1500);
-        t.sizeTo('#content').catch(function() {});
+    function assignId() {
+      t.cards('id').then(function(allCards) {
+        var promises = allCards.map(function(card) {
+          return t.get('card', 'shared', 'cardId', { card: card.id });
+        });
+        return Promise.all(promises).then(function(ids) {
+          var maxId = 0;
+          ids.forEach(function(id) {
+            if (id) { var n = parseInt(id, 10); if (!isNaN(n) && n > maxId) maxId = n; }
+          });
+          return t.set('card', 'shared', 'cardId', String(maxId + 1).padStart(4, '0')).then(function() {
+            window.location.reload();
+          });
+        });
       });
     }
   </script>
