@@ -10,13 +10,17 @@ function formatId(num, pad) {
 
 function getLabel(t) {
   return Promise.all([
-    t.get('card', 'shared', 'cardId'),
+    t.card('id'),
+    t.get('board', 'shared', 'cardIdMap'),
     t.get('board', 'shared', 'prefix'),
     t.get('board', 'shared', 'postfix'),
     t.get('board', 'shared', 'padding')
   ]).then(function(vals) {
-    if (!vals[0]) return null;
-    return (vals[1] || '') + formatId(vals[0], vals[3]) + (vals[2] || '');
+    var cardId = vals[0].id;
+    var idMap = vals[1] || {};
+    var num = idMap[cardId];
+    if (!num) return null;
+    return (vals[2] || '') + formatId(num, vals[4]) + (vals[3] || '');
   });
 }
 
@@ -54,30 +58,27 @@ TrelloPowerUp.initialize({
         text: 'Card ID Settings',
         icon: { dark: ICON_URL, light: ICON_URL },
         callback: function(t) {
-          return t.popup({
-            title: 'Card ID Settings',
-            url: 'settings.html',
-            height: 320
-          });
+          return t.popup({ title: 'Card ID Settings', url: 'settings.html', height: 320 });
         }
       },
       {
         text: 'Debug Card IDs',
         icon: { dark: ICON_URL, light: ICON_URL },
         callback: function(t) {
-          return t.popup({
-            title: 'Card ID Debug',
-            url: 'debug.html',
-            height: 300
-          });
+          return t.popup({ title: 'Card ID Debug', url: 'debug.html', height: 300 });
         }
       }
     ];
   },
 
   'card-buttons': function(t) {
-    return t.get('card', 'shared', 'cardId').then(function(cardId) {
-      if (cardId) return [];
+    return Promise.all([
+      t.card('id'),
+      t.get('board', 'shared', 'cardIdMap')
+    ]).then(function(vals) {
+      var cardId = vals[0].id;
+      var idMap = vals[1] || {};
+      if (idMap[cardId]) return [];
       return [{
         text: 'Assign Card ID',
         callback: function(t) { return assignNextId(t); }
@@ -92,21 +93,19 @@ TrelloPowerUp.initialize({
 
 function assignNextId(t) {
   return Promise.all([
-    t.cards('id'),
-    t.get('board', 'shared', 'padding')
-  ]).then(function(res) {
-    var allCards = res[0];
-    var promises = allCards.map(function(card) {
-      return t.get('card', 'shared', 'cardId', { card: card.id });
+    t.card('id'),
+    t.get('board', 'shared', 'cardIdMap')
+  ]).then(function(vals) {
+    var cardId = vals[0].id;
+    var idMap = vals[1] || {};
+    var maxId = 0;
+    Object.values(idMap).forEach(function(n) {
+      var num = parseInt(n, 10);
+      if (!isNaN(num) && num > maxId) maxId = num;
     });
-    return Promise.all(promises).then(function(ids) {
-      var maxId = 0;
-      ids.forEach(function(id) {
-        if (id) { var n = parseInt(id, 10); if (!isNaN(n) && n > maxId) maxId = n; }
-      });
-      return t.set('card', 'shared', 'cardId', String(maxId + 1)).then(function() {
-        return t.closePopup();
-      });
+    idMap[cardId] = String(maxId + 1);
+    return t.set('board', 'shared', 'cardIdMap', idMap).then(function() {
+      return t.closePopup();
     });
   });
 }

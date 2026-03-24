@@ -23,23 +23,23 @@
       t.get('board', 'shared', 'prefix'),
       t.get('board', 'shared', 'postfix'),
       t.get('board', 'shared', 'padding'),
+      t.get('board', 'shared', 'cardIdMap'),
       t.cards('id', 'name')
     ]).then(function(vals) {
-      var prefix = vals[0], postfix = vals[1], padding = vals[2];
-      var cards = vals[3];
-      var result = { prefix: prefix, postfix: postfix, padding: padding, cardCount: cards.length, sampleCards: [] };
-
-      var sample = cards.slice(0, 5);
-      var promises = sample.map(function(card) {
-        return t.get('card', 'shared', 'cardId', { card: card.id }).then(function(id) {
-          return { name: card.name.substring(0, 30), cardId: id };
-        });
+      var idMap = vals[3] || {};
+      var cards = vals[4];
+      var sample = cards.slice(0, 8).map(function(card) {
+        return { name: card.name.substring(0, 35), assignedId: idMap[card.id] || null };
       });
-      Promise.all(promises).then(function(samples) {
-        result.sampleCards = samples;
-        document.getElementById('out').textContent = JSON.stringify(result, null, 2);
-        t.sizeTo(document.body);
-      });
+      document.getElementById('out').textContent = JSON.stringify({
+        prefix: vals[0],
+        postfix: vals[1],
+        padding: vals[2],
+        totalCards: cards.length,
+        assignedCount: Object.keys(idMap).length,
+        sample: sample
+      }, null, 2);
+      t.sizeTo(document.body);
     });
   </script>
 </body>

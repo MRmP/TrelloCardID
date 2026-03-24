@@ -27,11 +27,7 @@
       transition: border-color 0.15s;
     }
     input:focus, select:focus { border-color: var(--bg-blue); }
-    .preview {
-      margin-top: 12px;
-      font-size: 13px;
-      color: var(--text-subtle);
-    }
+    .preview { margin-top: 12px; font-size: 13px; color: var(--text-subtle); }
     .preview span {
       display: inline-block;
       background: var(--bg-blue);
@@ -55,14 +51,8 @@
     }
     .btn-primary:hover { opacity: 0.85; }
     .btn-primary:disabled { opacity: 0.5; cursor: default; }
-    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0 0 0; }
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      color: var(--text-subtle);
-      margin: 12px 0 6px 0;
-    }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0 0; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-subtle); margin: 12px 0 6px; }
     .btn-subtle {
       width: 100%;
       padding: 8px 10px;
@@ -102,20 +92,17 @@
   </select>
 
   <div class="preview">Preview: <span id="preview">0001</span></div>
-
   <button class="btn-primary" id="save-btn" onclick="saveSettings()">Save Settings</button>
 
   <hr class="divider" />
   <div class="section-title">Bulk actions</div>
   <button class="btn-subtle" id="assign-btn" onclick="assignAll()">
-    ↻ Re-apply prefix/postfix &amp; assign missing IDs
+    ↻ Assign missing IDs to all cards
   </button>
   <div class="status" id="status"></div>
 
   <script>
     var t = TrelloPowerUp.iframe();
-
-    // Apply dark mode if Trello passes ?theme=dark
     var params = new URLSearchParams(window.location.search);
     if (params.get('theme') === 'dark') document.body.classList.add('dark');
 
@@ -176,44 +163,43 @@
       status.className = 'status';
       status.textContent = 'Loading cards...';
 
-      t.cards('id').then(function(allCards) {
-        var fetchPromises = allCards.map(function(card) {
-          return t.get('card', 'shared', 'cardId', { card: card.id }).then(function(id) {
-            return { card: card, existingId: id };
-          });
-        });
-        return Promise.all(fetchPromises).then(function(results) {
+      t.cards('id', 'name').then(function(allCards) {
+        // Load the board-level ID map (cardId => numeric id)
+        return t.get('board', 'shared', 'cardIdMap').then(function(idMap) {
+          idMap = idMap || {};
+
+          // Find max existing ID
           var maxId = 0;
-          results.forEach(function(r) {
-            if (r.existingId) {
-              var num = parseInt(r.existingId, 10);
-              if (!isNaN(num) && num > maxId) maxId = num;
-            }
+          Object.values(idMap).forEach(function(n) {
+            var num = parseInt(n, 10);
+            if (!isNaN(num) && num > maxId) maxId = num;
           });
-          var toAssign = results.filter(function(r) { return !r.existingId; });
+
+          // Find cards without an ID
+          var toAssign = allCards.filter(function(card) {
+            return !idMap[card.id];
+          });
+
           if (toAssign.length === 0) {
             status.className = 'status done';
             status.textContent = '✓ All cards already have IDs.';
             btn.disabled = false;
             return;
           }
+
           status.textContent = 'Assigning ' + toAssign.length + ' IDs...';
-          var assigned = 0;
-          function assignNext(index) {
-            if (index >= toAssign.length) {
-              status.className = 'status done';
-              status.textContent = '✓ Done! Assigned ' + assigned + ' IDs.';
-              btn.disabled = false;
-              return;
-            }
-            var nextId = formatId(maxId + index + 1, pad);
-            t.set('card', 'shared', 'cardId', nextId, { card: toAssign[index].card.id }).then(function() {
-              assigned++;
-              status.textContent = 'Assigned ' + assigned + ' of ' + toAssign.length + '...';
-              assignNext(index + 1);
-            });
-          }
-          assignNext(0);
+
+          // Assign IDs and build updated map
+          toAssign.forEach(function(card, i) {
+            idMap[card.id] = String(maxId + i + 1);
+          });
+
+          // Save the whole map in one write
+          t.set('board', 'shared', 'cardIdMap', idMap).then(function() {
+            status.className = 'status done';
+            status.textContent = '✓ Done! Assigned ' + toAssign.length + ' IDs.';
+            btn.disabled = false;
+          });
         });
       }).catch(function(err) {
         status.className = 'status error';
