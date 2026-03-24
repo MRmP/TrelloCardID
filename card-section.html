@@ -3,49 +3,36 @@
 <head>
   <meta charset="utf-8" />
   <title>Card ID</title>
+  <link rel="stylesheet" href="theme.css" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      padding: 12px 16px;
-      background: transparent;
-      color: var(--ds-text, #172b4d);
-    }
+    body { padding: 12px 16px; }
     .id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .badge {
       display: inline-block;
-      background: var(--ds-background-accent-blue-subtle, #0079bf);
-      color: var(--ds-text-inverse, #fff);
+      background: var(--bg-blue);
+      color: var(--text-on-blue);
       border-radius: 4px;
       padding: 4px 10px;
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.5px;
     }
-    .no-id { font-size: 13px; color: var(--ds-text-subtle, #5e6c84); }
-    .divider {
-      border: none;
-      border-top: 1px solid var(--ds-border, #dfe1e6);
-      margin: 10px 0;
-    }
+    .no-id { font-size: 13px; color: var(--text-subtle); }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; }
     .settings-row { display: flex; gap: 8px; }
     button {
       flex: 1;
       padding: 6px 10px;
-      border: 1px solid var(--ds-border, #dfe1e6);
+      border: 1px solid var(--border);
       border-radius: 4px;
-      background: var(--ds-background-neutral, #f4f5f7);
-      color: var(--ds-text, #172b4d);
+      background: var(--bg-neutral);
+      color: var(--text);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
     button:hover { opacity: 0.85; }
-    button.primary {
-      background: var(--ds-background-accent-blue-subtle, #0079bf);
-      color: var(--ds-text-inverse, #fff);
-      border-color: transparent;
-    }
+    button.primary { background: var(--bg-blue); color: var(--text-on-blue); border-color: transparent; }
   </style>
 </head>
 <body>
@@ -62,15 +49,21 @@
   <script>
     var t = TrelloPowerUp.iframe({ appKey: '2e23b655e062b3728cc2635e6f537b97', appName: 'Card ID Power-Up' });
 
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('theme') === 'dark') document.body.classList.add('dark');
+
     Promise.all([
       t.get('card', 'shared', 'cardId'),
       t.get('board', 'shared', 'prefix'),
-      t.get('board', 'shared', 'postfix')
+      t.get('board', 'shared', 'postfix'),
+      t.get('board', 'shared', 'padding')
     ]).then(function(vals) {
       var cardId = vals[0], prefix = vals[1] || '', postfix = vals[2] || '';
+      var pad = (vals[3] !== undefined && vals[3] !== null) ? parseInt(vals[3], 10) : 4;
       if (cardId) {
+        var formatted = pad === 0 ? String(parseInt(cardId, 10)) : String(parseInt(cardId, 10)).padStart(pad, '0');
         var badge = document.getElementById('badge');
-        badge.textContent = prefix + cardId + postfix;
+        badge.textContent = prefix + formatted + postfix;
         badge.style.display = 'inline-block';
       } else {
         document.getElementById('no-id').style.display = 'inline';
@@ -80,7 +73,7 @@
     });
 
     function openSettings() {
-      t.popup({ title: 'Card ID Settings', url: 'settings.html', height: 200 });
+      t.popup({ title: 'Card ID Settings', url: 'settings.html', height: 320 });
     }
 
     function assignId() {
@@ -93,7 +86,7 @@
           ids.forEach(function(id) {
             if (id) { var n = parseInt(id, 10); if (!isNaN(n) && n > maxId) maxId = n; }
           });
-          return t.set('card', 'shared', 'cardId', String(maxId + 1).padStart(4, '0')).then(function() {
+          return t.set('card', 'shared', 'cardId', String(maxId + 1)).then(function() {
             window.location.reload();
           });
         });
