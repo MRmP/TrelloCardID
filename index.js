@@ -75,6 +75,7 @@ TrelloPowerUp.initialize({
   }
 
 }, {
+  appKey: '2e23b655e062b3728cc2635e6f537b97',
   appName: 'Card ID Power-Up'
 });
 
