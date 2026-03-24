@@ -3,7 +3,7 @@
  * IDs are stored in card shared plugin data and displayed as badges.
  */
 
-var PLUGIN_ID = 'card-id-powerup';
+var ICON_URL = 'https://mrmP.github.io/TrelloCardID/icon.svg';
 
 TrelloPowerUp.initialize({
 
@@ -11,14 +11,11 @@ TrelloPowerUp.initialize({
   'card-badges': function(t) {
     return t.get('card', 'shared', 'cardId').then(function(cardId) {
       if (!cardId) return [];
-      return t.get('board', 'shared', 'prefix').then(function(prefix) {
-        return t.get('board', 'shared', 'postfix').then(function(postfix) {
-          var label = (prefix || '') + cardId + (postfix || '');
-          return [{
-            text: label,
-            color: 'blue'
-          }];
-        });
+      return Promise.all([
+        t.get('board', 'shared', 'prefix'),
+        t.get('board', 'shared', 'postfix')
+      ]).then(function(vals) {
+        return [{ text: (vals[0] || '') + cardId + (vals[1] || ''), color: 'blue' }];
       });
     });
   },
@@ -27,74 +24,63 @@ TrelloPowerUp.initialize({
   'card-detail-badges': function(t) {
     return t.get('card', 'shared', 'cardId').then(function(cardId) {
       if (!cardId) return [];
-      return t.get('board', 'shared', 'prefix').then(function(prefix) {
-        return t.get('board', 'shared', 'postfix').then(function(postfix) {
-          var label = (prefix || '') + cardId + (postfix || '');
-          return [{
-            title: 'Card ID',
-            text: label,
-            color: 'blue'
-          }];
-        });
+      return Promise.all([
+        t.get('board', 'shared', 'prefix'),
+        t.get('board', 'shared', 'postfix')
+      ]).then(function(vals) {
+        return [{ title: 'Card ID', text: (vals[0] || '') + cardId + (vals[1] || ''), color: 'blue' }];
       });
     });
   },
 
-  // Board button — opens settings
+  // Board buttons — Assign All IDs + Settings
   'board-buttons': function(t) {
-    return [{
-      text: 'Card ID Settings',
-      icon: {
-        dark: 'https://cdn.glitch.global/trello-card-id/icon.svg',
-        light: 'https://cdn.glitch.global/trello-card-id/icon.svg'
+    return [
+      {
+        text: 'Assign All Card IDs',
+        icon: { dark: ICON_URL, light: ICON_URL },
+        callback: function(t) {
+          return t.popup({
+            title: 'Assign IDs to All Cards',
+            url: 'assign-all.html',
+            height: 160
+          });
+        }
       },
-      callback: function(t) {
-        return t.popup({
-          title: 'Card ID Settings',
-          url: 'settings.html',
-          height: 200
-        });
+      {
+        text: 'Card ID Settings',
+        icon: { dark: ICON_URL, light: ICON_URL },
+        callback: function(t) {
+          return t.popup({
+            title: 'Card ID Settings',
+            url: 'settings.html',
+            height: 200
+          });
+        }
       }
-    }];
+    ];
   },
 
   // Card button — manually assign ID if not yet assigned
   'card-buttons': function(t) {
     return t.get('card', 'shared', 'cardId').then(function(cardId) {
-      if (cardId) return []; // Already has an ID
+      if (cardId) return [];
       return [{
         text: 'Assign Card ID',
         callback: function(t) {
-          return assignCardId(t);
+          return assignNextId(t);
         }
       }];
     });
-  },
-
-  // on-enable: assign IDs to all existing cards
-  'on-enable': function(t) {
-    return t.board('id').then(function(board) {
-      return t.cards('id', 'name').then(function(cards) {
-        var promises = cards.map(function(card, index) {
-          return t.get('card', 'shared', 'cardId', { card: card.id }).then(function(existing) {
-            if (!existing) {
-              return t.set('card', 'shared', 'cardId', String(index + 1).padStart(4, '0'), { card: card.id });
-            }
-          });
-        });
-        return Promise.all(promises);
-      });
-    });
   }
+
 }, {
-  appKey: '',  // Not needed for self-hosted manifest approach
   appName: 'Card ID Power-Up'
 });
 
-// Assign the next sequential ID to a card
-function assignCardId(t) {
+// Assign the next sequential ID to the current card
+function assignNextId(t) {
   return t.cards('id').then(function(allCards) {
-    // Count how many cards already have IDs to determine next number
     var promises = allCards.map(function(card) {
       return t.get('card', 'shared', 'cardId', { card: card.id });
     });
