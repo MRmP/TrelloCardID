@@ -8,38 +8,39 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       padding: 16px;
-      background: #fff;
-      color: #172b4d;
+      background: var(--ds-surface, #fff);
+      color: var(--ds-text, #172b4d);
     }
     label {
       display: block;
       font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
-      color: #5e6c84;
+      color: var(--ds-text-subtle, #5e6c84);
       margin-bottom: 4px;
       margin-top: 12px;
     }
     input {
       width: 100%;
       padding: 8px 10px;
-      border: 2px solid #dfe1e6;
+      border: 2px solid var(--ds-border, #dfe1e6);
       border-radius: 4px;
       font-size: 14px;
-      color: #172b4d;
+      color: var(--ds-text, #172b4d);
+      background: var(--ds-background-input, #fafbfc);
       outline: none;
       transition: border-color 0.15s;
     }
-    input:focus { border-color: #0079bf; }
+    input:focus { border-color: var(--ds-border-focused, #0079bf); }
     .preview {
       margin-top: 12px;
       font-size: 13px;
-      color: #5e6c84;
+      color: var(--ds-text-subtle, #5e6c84);
     }
     .preview span {
       display: inline-block;
-      background: #0079bf;
-      color: white;
+      background: var(--ds-background-accent-blue-subtle, #0079bf);
+      color: var(--ds-text-inverse, #fff);
       border-radius: 3px;
       padding: 2px 8px;
       font-weight: 600;
@@ -49,20 +50,20 @@
       margin-top: 16px;
       width: 100%;
       padding: 10px;
-      background: #0079bf;
-      color: white;
+      background: var(--ds-background-accent-blue-subtle, #0079bf);
+      color: var(--ds-text-inverse, #fff);
       border: none;
       border-radius: 4px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background: #026aa7; }
+    button:hover { opacity: 0.85; }
     .saved {
       margin-top: 8px;
       text-align: center;
       font-size: 12px;
-      color: #61bd4f;
+      color: var(--ds-text-success, #61bd4f);
       display: none;
     }
   </style>
@@ -84,9 +85,8 @@
   <div class="saved" id="saved">✓ Saved!</div>
 
   <script>
-    var t = TrelloPowerUp.iframe();
+    var t = TrelloPowerUp.iframe({ appKey: '2e23b655e062b3728cc2635e6f537b97', appName: 'Card ID Power-Up' });
 
-    // Load existing settings
     Promise.all([
       t.get('board', 'shared', 'prefix'),
       t.get('board', 'shared', 'postfix')

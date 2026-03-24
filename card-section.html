@@ -9,36 +9,43 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       padding: 12px 16px;
       background: transparent;
-      color: #172b4d;
+      color: var(--ds-text, #172b4d);
     }
     .id-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .badge {
       display: inline-block;
-      background: #0079bf;
-      color: white;
+      background: var(--ds-background-accent-blue-subtle, #0079bf);
+      color: var(--ds-text-inverse, #fff);
       border-radius: 4px;
       padding: 4px 10px;
       font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.5px;
     }
-    .no-id { font-size: 13px; color: #5e6c84; }
-    .divider { border: none; border-top: 1px solid #dfe1e6; margin: 10px 0; }
+    .no-id { font-size: 13px; color: var(--ds-text-subtle, #5e6c84); }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--ds-border, #dfe1e6);
+      margin: 10px 0;
+    }
     .settings-row { display: flex; gap: 8px; }
     button {
       flex: 1;
       padding: 6px 10px;
-      border: 1px solid #dfe1e6;
+      border: 1px solid var(--ds-border, #dfe1e6);
       border-radius: 4px;
-      background: #f4f5f7;
-      color: #172b4d;
+      background: var(--ds-background-neutral, #f4f5f7);
+      color: var(--ds-text, #172b4d);
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background: #e4e6ea; }
-    button.primary { background: #0079bf; color: white; border-color: #0079bf; }
-    button.primary:hover { background: #026aa7; }
+    button:hover { opacity: 0.85; }
+    button.primary {
+      background: var(--ds-background-accent-blue-subtle, #0079bf);
+      color: var(--ds-text-inverse, #fff);
+      border-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -50,10 +57,11 @@
   <hr class="divider" />
   <div class="settings-row">
     <button id="assign-btn" style="display:none" onclick="assignId()">Assign ID</button>
-    <button class="primary" onclick="openSettings()">&#9881; Prefix / Postfix Settings</button>
+    <button class="primary" onclick="openSettings()">⚙ Prefix / Postfix Settings</button>
   </div>
   <script>
-    var t = TrelloPowerUp.iframe();
+    var t = TrelloPowerUp.iframe({ appKey: '2e23b655e062b3728cc2635e6f537b97', appName: 'Card ID Power-Up' });
+
     Promise.all([
       t.get('card', 'shared', 'cardId'),
       t.get('board', 'shared', 'prefix'),
@@ -70,9 +78,11 @@
       }
       t.sizeTo(document.body);
     });
+
     function openSettings() {
       t.popup({ title: 'Card ID Settings', url: 'settings.html', height: 200 });
     }
+
     function assignId() {
       t.cards('id').then(function(allCards) {
         var promises = allCards.map(function(card) {

@@ -8,47 +8,45 @@
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       padding: 16px;
-      background: #fff;
-      color: #172b4d;
+      background: var(--ds-surface, #fff);
+      color: var(--ds-text, #172b4d);
     }
     p {
       font-size: 13px;
-      color: #5e6c84;
+      color: var(--ds-text-subtle, #5e6c84);
       margin-bottom: 16px;
       line-height: 1.5;
     }
     button {
       width: 100%;
       padding: 10px;
-      background: #0079bf;
-      color: white;
+      background: var(--ds-background-accent-blue-subtle, #0079bf);
+      color: var(--ds-text-inverse, #fff);
       border: none;
       border-radius: 4px;
       font-size: 14px;
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { background: #026aa7; }
-    button:disabled { background: #a5c9e0; cursor: default; }
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.5; cursor: default; }
     .status {
       margin-top: 10px;
       font-size: 12px;
       text-align: center;
-      color: #5e6c84;
+      color: var(--ds-text-subtle, #5e6c84);
       min-height: 18px;
     }
-    .done { color: #61bd4f; font-weight: 600; }
+    .done { color: var(--ds-text-success, #61bd4f); font-weight: 600; }
   </style>
 </head>
 <body>
   <script src="https://p.trellocdn.com/power-up.min.js"></script>
-
   <p>Assigns sequential IDs to all cards on this board that don't already have one. Existing IDs will not be changed.</p>
   <button id="btn" onclick="assignAll()">Assign IDs to all cards</button>
   <div class="status" id="status"></div>
-
   <script>
-    var t = TrelloPowerUp.iframe();
+    var t = TrelloPowerUp.iframe({ appKey: '2e23b655e062b3728cc2635e6f537b97', appName: 'Card ID Power-Up' });
 
     function assignAll() {
       var btn = document.getElementById('btn');
@@ -57,15 +55,12 @@
       status.textContent = 'Loading cards...';
 
       t.cards('id', 'name').then(function(allCards) {
-        // First, fetch all existing IDs
         var fetchPromises = allCards.map(function(card) {
           return t.get('card', 'shared', 'cardId', { card: card.id }).then(function(id) {
             return { card: card, existingId: id };
           });
         });
-
         return Promise.all(fetchPromises).then(function(results) {
-          // Find max existing ID
           var maxId = 0;
           results.forEach(function(r) {
             if (r.existingId) {
@@ -73,22 +68,15 @@
               if (!isNaN(num) && num > maxId) maxId = num;
             }
           });
-
-          // Assign IDs sequentially to cards that don't have one
-          var counter = maxId;
           var toAssign = results.filter(function(r) { return !r.existingId; });
           var assigned = 0;
-
           if (toAssign.length === 0) {
             status.textContent = 'All cards already have IDs!';
             status.className = 'status done';
             btn.disabled = false;
             return;
           }
-
           status.textContent = 'Assigning ' + toAssign.length + ' IDs...';
-
-          // Assign one by one to avoid race conditions
           function assignNext(index) {
             if (index >= toAssign.length) {
               status.textContent = '✓ Done! Assigned ' + assigned + ' IDs.';
@@ -96,16 +84,13 @@
               setTimeout(function() { t.closePopup(); }, 1200);
               return;
             }
-            counter++;
-            var nextId = String(counter).padStart(4, '0');
-            var cardId = toAssign[index].card.id;
-            t.set('card', 'shared', 'cardId', nextId, { card: cardId }).then(function() {
+            var nextId = String(maxId + index + 1).padStart(4, '0');
+            t.set('card', 'shared', 'cardId', nextId, { card: toAssign[index].card.id }).then(function() {
               assigned++;
               status.textContent = 'Assigned ' + assigned + ' of ' + toAssign.length + '...';
               assignNext(index + 1);
             });
           }
-
           assignNext(0);
         });
       }).catch(function(err) {
