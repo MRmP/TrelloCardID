@@ -4,7 +4,8 @@ var ICON_URL = 'https://mrmP.github.io/TrelloCardID/icon.svg';
 
 function formatId(num, pad) {
   var n = parseInt(num, 10);
-  return (pad === 0 || pad === '0') ? String(n) : String(n).padStart(parseInt(pad, 10), '0');
+  var p = (pad !== undefined && pad !== null) ? parseInt(pad, 10) : 4;
+  return p === 0 ? String(n) : String(n).padStart(p, '0');
 }
 
 function getLabel(t) {
@@ -14,10 +15,8 @@ function getLabel(t) {
     t.get('board', 'shared', 'postfix'),
     t.get('board', 'shared', 'padding')
   ]).then(function(vals) {
-    var cardId = vals[0], prefix = vals[1] || '', postfix = vals[2] || '';
-    var pad = (vals[3] !== undefined && vals[3] !== null) ? vals[3] : 4;
-    if (!cardId) return null;
-    return prefix + formatId(cardId, pad) + postfix;
+    if (!vals[0]) return null;
+    return (vals[1] || '') + formatId(vals[0], vals[3]) + (vals[2] || '');
   });
 }
 
@@ -50,17 +49,30 @@ TrelloPowerUp.initialize({
   },
 
   'board-buttons': function(t) {
-    return [{
-      text: 'Card ID Settings',
-      icon: { dark: ICON_URL, light: ICON_URL },
-      callback: function(t) {
-        return t.popup({
-          title: 'Card ID Settings',
-          url: t.signUrl('settings.html'),
-          height: 320
-        });
+    return [
+      {
+        text: 'Card ID Settings',
+        icon: { dark: ICON_URL, light: ICON_URL },
+        callback: function(t) {
+          return t.popup({
+            title: 'Card ID Settings',
+            url: t.signUrl('settings.html'),
+            height: 320
+          });
+        }
+      },
+      {
+        text: 'Debug Card IDs',
+        icon: { dark: ICON_URL, light: ICON_URL },
+        callback: function(t) {
+          return t.popup({
+            title: 'Card ID Debug',
+            url: t.signUrl('debug.html'),
+            height: 300
+          });
+        }
       }
-    }];
+    ];
   },
 
   'card-buttons': function(t) {
@@ -84,7 +96,7 @@ function assignNextId(t) {
     t.get('board', 'shared', 'padding')
   ]).then(function(res) {
     var allCards = res[0];
-    var pad = (res[1] !== undefined && res[1] !== null) ? res[1] : 4;
+    var pad = res[1];
     var promises = allCards.map(function(card) {
       return t.get('card', 'shared', 'cardId', { card: card.id });
     });
