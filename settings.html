@@ -27,11 +27,29 @@
       transition: border-color 0.15s;
     }
     input:focus, select:focus { border-color: var(--bg-blue); }
+    .color-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .color-swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      position: relative;
+      transition: transform 0.1s;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: var(--text); }
+    .color-swatch.transparent-swatch {
+      background: repeating-conic-gradient(#ccc 0% 25%, #fff 0% 50%) 0 0 / 10px 10px;
+    }
     .preview { margin-top: 12px; font-size: 13px; color: var(--text-subtle); }
-    .preview span {
+    .preview-badge {
       display: inline-block;
-      background: var(--bg-blue);
-      color: var(--text-on-blue);
       border-radius: 3px;
       padding: 2px 8px;
       font-weight: 600;
@@ -91,7 +109,11 @@
     <option value="6">6 digits — 000001, 000002...</option>
   </select>
 
-  <div class="preview">Preview: <span id="preview">0001</span></div>
+  <label>Badge color</label>
+  <div class="color-grid" id="color-grid"></div>
+
+  <div class="preview">Preview: <span class="preview-badge" id="preview">BT-1</span></div>
+
   <button class="btn-primary" id="save-btn" onclick="saveSettings()">Save Settings</button>
 
   <hr class="divider" />
@@ -106,16 +128,36 @@
     var params = new URLSearchParams(window.location.search);
     if (params.get('theme') === 'dark') document.body.classList.add('dark');
 
-    Promise.all([
-      t.get('board', 'shared', 'prefix'),
-      t.get('board', 'shared', 'postfix'),
-      t.get('board', 'shared', 'padding')
-    ]).then(function(values) {
-      document.getElementById('prefix').value = values[0] || '';
-      document.getElementById('postfix').value = values[1] || '';
-      var pad = values[2];
-      if (pad !== undefined && pad !== null) document.getElementById('padding').value = String(pad);
-      updatePreview();
+    var COLORS = [
+      { key: 'null',       label: 'Transparent', bg: null },
+      { key: 'blue',       label: 'Blue',        bg: '#0079bf' },
+      { key: 'green',      label: 'Green',       bg: '#61bd4f' },
+      { key: 'orange',     label: 'Orange',      bg: '#ff9f1a' },
+      { key: 'red',        label: 'Red',         bg: '#eb5a46' },
+      { key: 'purple',     label: 'Purple',      bg: '#c377e0' },
+      { key: 'pink',       label: 'Pink',        bg: '#ff78cb' },
+      { key: 'sky',        label: 'Sky',         bg: '#00c2e0' },
+      { key: 'lime',       label: 'Lime',        bg: '#51e898' },
+      { key: 'light-gray', label: 'Gray',        bg: '#b6bbbf' },
+    ];
+
+    var selectedColor = 'null';
+
+    // Build color swatches
+    var grid = document.getElementById('color-grid');
+    COLORS.forEach(function(c) {
+      var sw = document.createElement('div');
+      sw.className = 'color-swatch' + (c.bg === null ? ' transparent-swatch' : '');
+      sw.title = c.label;
+      sw.dataset.key = c.key;
+      if (c.bg) sw.style.background = c.bg;
+      sw.addEventListener('click', function() {
+        selectedColor = c.key;
+        document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('selected'); });
+        sw.classList.add('selected');
+        updatePreview();
+      });
+      grid.appendChild(sw);
     });
 
     function updatePreview() {
@@ -123,12 +165,39 @@
       var postfix = document.getElementById('postfix').value;
       var pad = parseInt(document.getElementById('padding').value, 10);
       var num = pad === 0 ? '1' : String(1).padStart(pad, '0');
-      document.getElementById('preview').textContent = (prefix || '') + num + (postfix || '');
+      var badge = document.getElementById('preview');
+      badge.textContent = (prefix || '') + num + (postfix || '');
+      var colorDef = COLORS.find(function(c) { return c.key === selectedColor; });
+      if (colorDef && colorDef.bg) {
+        badge.style.background = colorDef.bg;
+        badge.style.color = '#fff';
+      } else {
+        badge.style.background = 'transparent';
+        badge.style.color = 'var(--text)';
+        badge.style.border = '1px solid var(--border)';
+      }
     }
 
     document.getElementById('prefix').addEventListener('input', updatePreview);
     document.getElementById('postfix').addEventListener('input', updatePreview);
     document.getElementById('padding').addEventListener('change', updatePreview);
+
+    // Load settings
+    Promise.all([
+      t.get('board', 'shared', 'prefix'),
+      t.get('board', 'shared', 'postfix'),
+      t.get('board', 'shared', 'padding'),
+      t.get('board', 'shared', 'badgeColor')
+    ]).then(function(values) {
+      document.getElementById('prefix').value = values[0] || '';
+      document.getElementById('postfix').value = values[1] || '';
+      var pad = values[2];
+      if (pad !== undefined && pad !== null) document.getElementById('padding').value = String(pad);
+      selectedColor = (values[3] !== undefined && values[3] !== null) ? values[3] : 'null';
+      var sw = document.querySelector('[data-key="' + selectedColor + '"]');
+      if (sw) sw.classList.add('selected');
+      updatePreview();
+    });
 
     function saveSettings() {
       var prefix = document.getElementById('prefix').value;
@@ -140,7 +209,8 @@
       Promise.all([
         t.set('board', 'shared', 'prefix', prefix),
         t.set('board', 'shared', 'postfix', postfix),
-        t.set('board', 'shared', 'padding', pad)
+        t.set('board', 'shared', 'padding', pad),
+        t.set('board', 'shared', 'badgeColor', selectedColor)
       ]).then(function() {
         btn.textContent = '✓ Saved!';
         setTimeout(function() {
@@ -162,39 +232,22 @@
       btn.disabled = true;
       status.className = 'status';
       status.textContent = 'Loading cards...';
-
       t.cards('id', 'name').then(function(allCards) {
-        // Load the board-level ID map (cardId => numeric id)
         return t.get('board', 'shared', 'cardIdMap').then(function(idMap) {
           idMap = idMap || {};
-
-          // Find max existing ID
           var maxId = 0;
           Object.values(idMap).forEach(function(n) {
             var num = parseInt(n, 10);
             if (!isNaN(num) && num > maxId) maxId = num;
           });
-
-          // Find cards without an ID
-          var toAssign = allCards.filter(function(card) {
-            return !idMap[card.id];
-          });
-
+          var toAssign = allCards.filter(function(card) { return !idMap[card.id]; });
           if (toAssign.length === 0) {
             status.className = 'status done';
             status.textContent = '✓ All cards already have IDs.';
             btn.disabled = false;
             return;
           }
-
-          status.textContent = 'Assigning ' + toAssign.length + ' IDs...';
-
-          // Assign IDs and build updated map
-          toAssign.forEach(function(card, i) {
-            idMap[card.id] = String(maxId + i + 1);
-          });
-
-          // Save the whole map in one write
+          toAssign.forEach(function(card, i) { idMap[card.id] = String(maxId + i + 1); });
           t.set('board', 'shared', 'cardIdMap', idMap).then(function() {
             status.className = 'status done';
             status.textContent = '✓ Done! Assigned ' + toAssign.length + ' IDs.';
