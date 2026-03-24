@@ -56,7 +56,7 @@ TrelloPowerUp.initialize({
         callback: function(t) {
           return t.popup({
             title: 'Card ID Settings',
-            url: t.signUrl('settings.html'),
+            url: 'settings.html',
             height: 320
           });
         }
@@ -67,7 +67,7 @@ TrelloPowerUp.initialize({
         callback: function(t) {
           return t.popup({
             title: 'Card ID Debug',
-            url: t.signUrl('debug.html'),
+            url: 'debug.html',
             height: 300
           });
         }
@@ -96,7 +96,6 @@ function assignNextId(t) {
     t.get('board', 'shared', 'padding')
   ]).then(function(res) {
     var allCards = res[0];
-    var pad = res[1];
     var promises = allCards.map(function(card) {
       return t.get('card', 'shared', 'cardId', { card: card.id });
     });
