@@ -46,7 +46,7 @@
       font-weight: 600;
       font-size: 12px;
     }
-    button {
+    .btn-primary {
       margin-top: 16px;
       width: 100%;
       padding: 10px;
@@ -58,14 +58,45 @@
       font-weight: 600;
       cursor: pointer;
     }
-    button:hover { opacity: 0.85; }
-    .saved {
-      margin-top: 8px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--ds-text-success, #61bd4f);
-      display: none;
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-primary:disabled { opacity: 0.5; cursor: default; }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--ds-border, #dfe1e6);
+      margin: 16px 0 0 0;
     }
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--ds-text-subtle, #5e6c84);
+      margin: 12px 0 6px 0;
+    }
+    .btn-subtle {
+      width: 100%;
+      padding: 8px 10px;
+      background: transparent;
+      color: var(--ds-text-subtle, #5e6c84);
+      border: 1px solid var(--ds-border, #dfe1e6);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+    }
+    .btn-subtle:hover {
+      background: var(--ds-background-neutral, #f4f5f7);
+      color: var(--ds-text, #172b4d);
+    }
+    .btn-subtle:disabled { opacity: 0.5; cursor: default; }
+    .status {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--ds-text-subtle, #5e6c84);
+      min-height: 16px;
+    }
+    .status.done { color: var(--ds-text-success, #61bd4f); font-weight: 600; }
+    .status.error { color: var(--ds-text-danger, #eb5a46); }
   </style>
 </head>
 <body>
@@ -77,12 +108,17 @@
   <label for="postfix">Postfix</label>
   <input type="text" id="postfix" placeholder="e.g. -2024" maxlength="20" />
 
-  <div class="preview">
-    Preview: <span id="preview">0001</span>
-  </div>
+  <div class="preview">Preview: <span id="preview">0001</span></div>
 
-  <button onclick="saveSettings()">Save Settings</button>
-  <div class="saved" id="saved">✓ Saved!</div>
+  <button class="btn-primary" id="save-btn" onclick="saveSettings()">Save Settings</button>
+
+  <hr class="divider" />
+
+  <div class="section-title">Bulk actions</div>
+  <button class="btn-subtle" id="assign-btn" onclick="assignAll()">
+    ↻ Re-apply prefix/postfix &amp; assign missing IDs
+  </button>
+  <div class="status" id="status"></div>
 
   <script>
     var t = TrelloPowerUp.iframe({ appKey: '2e23b655e062b3728cc2635e6f537b97', appName: 'Card ID Power-Up' });
@@ -108,16 +144,72 @@
     function saveSettings() {
       var prefix = document.getElementById('prefix').value;
       var postfix = document.getElementById('postfix').value;
+      var btn = document.getElementById('save-btn');
+      btn.disabled = true;
+      btn.textContent = 'Saving...';
       Promise.all([
         t.set('board', 'shared', 'prefix', prefix),
         t.set('board', 'shared', 'postfix', postfix)
       ]).then(function() {
-        var saved = document.getElementById('saved');
-        saved.style.display = 'block';
+        btn.textContent = '✓ Saved!';
         setTimeout(function() {
-          saved.style.display = 'none';
+          btn.textContent = 'Save Settings';
+          btn.disabled = false;
           t.closePopup();
-        }, 1000);
+        }, 800);
+      });
+    }
+
+    function assignAll() {
+      var btn = document.getElementById('assign-btn');
+      var status = document.getElementById('status');
+      btn.disabled = true;
+      status.className = 'status';
+      status.textContent = 'Loading cards...';
+
+      t.cards('id').then(function(allCards) {
+        var fetchPromises = allCards.map(function(card) {
+          return t.get('card', 'shared', 'cardId', { card: card.id }).then(function(id) {
+            return { card: card, existingId: id };
+          });
+        });
+        return Promise.all(fetchPromises).then(function(results) {
+          var maxId = 0;
+          results.forEach(function(r) {
+            if (r.existingId) {
+              var num = parseInt(r.existingId, 10);
+              if (!isNaN(num) && num > maxId) maxId = num;
+            }
+          });
+          var toAssign = results.filter(function(r) { return !r.existingId; });
+          if (toAssign.length === 0) {
+            status.className = 'status done';
+            status.textContent = '✓ All cards already have IDs.';
+            btn.disabled = false;
+            return;
+          }
+          status.textContent = 'Assigning ' + toAssign.length + ' IDs...';
+          var assigned = 0;
+          function assignNext(index) {
+            if (index >= toAssign.length) {
+              status.className = 'status done';
+              status.textContent = '✓ Done! Assigned ' + assigned + ' IDs.';
+              btn.disabled = false;
+              return;
+            }
+            var nextId = String(maxId + index + 1).padStart(4, '0');
+            t.set('card', 'shared', 'cardId', nextId, { card: toAssign[index].card.id }).then(function() {
+              assigned++;
+              status.textContent = 'Assigned ' + assigned + ' of ' + toAssign.length + '...';
+              assignNext(index + 1);
+            });
+          }
+          assignNext(0);
+        });
+      }).catch(function(err) {
+        status.className = 'status error';
+        status.textContent = 'Error: ' + err.message;
+        btn.disabled = false;
       });
     }
   </script>
