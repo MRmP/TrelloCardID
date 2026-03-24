@@ -1,25 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 144 144" width="144" height="144">
-  <!-- Background -->
-  <rect width="144" height="144" rx="24" fill="#0052CC"/>
-
-  <!-- Card shape -->
-  <rect x="22" y="28" width="100" height="76" rx="10" fill="#1868DB"/>
-
-  <!-- Card header stripe -->
-  <rect x="22" y="28" width="100" height="22" rx="10" fill="#2684FF"/>
-  <rect x="22" y="39" width="100" height="11" fill="#2684FF"/>
-
-  <!-- Hash symbol -->
-  <g fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round">
-    <!-- Horizontal bars -->
-    <line x1="46" y1="76" x2="98" y2="76"/>
-    <line x1="46" y1="91" x2="98" y2="91"/>
-    <!-- Vertical bars -->
-    <line x1="62" y1="66" x2="55" y2="101"/>
-    <line x1="82" y1="66" x2="75" y2="101"/>
-  </g>
-
-  <!-- ID number badge -->
-  <rect x="78" y="18" width="48" height="26" rx="8" fill="#FF5630"/>
-  <text x="102" y="36" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700" fill="#ffffff" text-anchor="middle">ID</text>
+  <rect width="144" height="144" rx="22" fill="#0052CC"/>
+  <rect x="18" y="22" width="108" height="82" rx="10" fill="#1565C0"/>
+  <rect x="18" y="22" width="108" height="26" rx="10" fill="#2979FF"/>
+  <rect x="18" y="37" width="108" height="11" fill="#2979FF"/>
+  <rect x="28" y="32" width="32" height="6" rx="3" fill="rgba(255,255,255,0.5)"/>
+  <rect x="28" y="58" width="88" height="7" rx="3.5" fill="rgba(255,255,255,0.15)"/>
+  <rect x="28" y="72" width="64" height="7" rx="3.5" fill="rgba(255,255,255,0.15)"/>
+  <rect x="28" y="86" width="74" height="7" rx="3.5" fill="rgba(255,255,255,0.15)"/>
+  <rect x="58" y="78" width="64" height="32" rx="10" fill="#FF7452"/>
+  <text x="90" y="100" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="800" fill="#ffffff" text-anchor="middle">ID</text>
 </svg>
