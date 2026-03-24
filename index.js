@@ -56,7 +56,7 @@ TrelloPowerUp.initialize({
       callback: function(t) {
         return t.popup({
           title: 'Card ID Settings',
-          url: 'settings.html',
+          url: t.signUrl('settings.html'),
           height: 320
         });
       }

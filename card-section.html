@@ -47,7 +47,7 @@
     <button class="primary" onclick="openSettings()">⚙ Prefix / Postfix Settings</button>
   </div>
   <script>
-    var t = TrelloPowerUp.iframe({ appKey: '2e23b655e062b3728cc2635e6f537b97', appName: 'Card ID Power-Up' });
+    var t = TrelloPowerUp.iframe();
 
     var params = new URLSearchParams(window.location.search);
     if (params.get('theme') === 'dark') document.body.classList.add('dark');
@@ -73,7 +73,7 @@
     });
 
     function openSettings() {
-      t.popup({ title: 'Card ID Settings', url: 'settings.html', height: 320 });
+      t.popup({ title: 'Card ID Settings', url: t.signUrl('settings.html'), height: 320 });
     }
 
     function assignId() {
