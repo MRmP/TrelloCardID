@@ -33,7 +33,20 @@ TrelloPowerUp.initialize({
     });
   },
 
-  // Board buttons — Assign All IDs + Settings
+  // Card back section — shows settings panel inside the card detail view
+  'card-back-section': function(t) {
+    return {
+      title: 'Card ID',
+      icon: ICON_URL,
+      content: {
+        type: 'iframe',
+        url: t.signUrl('card-section.html'),
+        height: 120
+      }
+    };
+  },
+
+  // Board buttons — Assign All IDs
   'board-buttons': function(t) {
     return [
       {
@@ -44,17 +57,6 @@ TrelloPowerUp.initialize({
             title: 'Assign IDs to All Cards',
             url: 'assign-all.html',
             height: 160
-          });
-        }
-      },
-      {
-        text: 'Card ID Settings',
-        icon: { dark: ICON_URL, light: ICON_URL },
-        callback: function(t) {
-          return t.popup({
-            title: 'Card ID Settings',
-            url: 'settings.html',
-            height: 200
           });
         }
       }
